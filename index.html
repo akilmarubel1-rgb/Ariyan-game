@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ariyan Army - Crazy OP Graphics Edition</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            user-select: none;
+            touch-action: none;
+        }
+        #game-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 1000px;
+            max-height: 562.5px;
+            background: #000;
+            box-shadow: 0 0 80px rgba(236, 72, 153, 0.3);
+            border: 2px solid #ec4899;
+            overflow: hidden;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        #lobby-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            padding: 10px;
+        }
+        .lobby-title {
+            font-size: clamp(26px, 5vw, 38px);
+            font-weight: 900;
+            color: #ec4899;
+            text-shadow: 0 0 20px rgba(236, 72, 153, 0.8);
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        .lobby-sub { font-size: clamp(9px, 2vw, 11px); color: #38bdf8; margin-bottom: 8px; letter-spacing: 2px; text-align: center; }
+        
+        .multiplayer-box {
+            background: rgba(15, 23, 42, 0.95);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #ec4899;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 92%;
+            max-width: 440px;
+            text-align: center;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .label-text { font-size: 10px; color: #94a3b8; text-align: left; font-weight: bold; }
+        
+        .mode-select { display: flex; gap: 6px; margin-bottom: 4px; }
+        .mode-btn {
+            flex: 1; padding: 6px; background: #334155; border: 1px solid #64748b;
+            color: #fff; font-size: 10px; font-weight: bold; border-radius: 6px; cursor: pointer;
+        }
+        .mode-btn.active { background: #db2777; border-color: #f43f5e; }
+
+        .avatar-select { display: flex; justify-content: space-between; gap: 6px; }
+        .avatar-card {
+            flex: 1; background: #1e293b; border: 2px solid #475569; padding: 4px;
+            border-radius: 8px; color: #fff; cursor: pointer; font-size: 9px; font-weight: bold;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .avatar-card.active { border-color: #ec4899; background: #500724; }
+        .avatar-preview { width: 32px; height: 32px; background: #0f172a; border-radius: 50%; }
+
+        .btn {
+            background: #db2777; border: none; padding: 8px; font-weight: bold;
+            color: white; border-radius: 6px; cursor: pointer; font-size: 11px;
+            box-shadow: 0 4px 12px rgba(219, 39, 119, 0.4);
+        }
+        .btn-green { background: #16a34a; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4); }
+        .btn-music { background: #7c3aed; }
+        
+        input {
+            padding: 6px; border-radius: 6px; border: 1px solid #475569;
+            background: #0f172a; color: #fff; text-align: center; font-weight: bold; font-size: 11px;
+        }
+
+        .mobile-touch-zone {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 20; display: none;
+        }
+        .touch-btn {
+            pointer-events: auto; position: absolute;
+            background: rgba(220, 38, 38, 0.85); border: 2px solid #f87171;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: clamp(10px, 2.5vw, 12px); font-weight: bold; color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            right: 4vw; bottom: 18vh; width: 52px; height: 52px;
+        }
+
+        #death-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 40; backdrop-filter: blur(4px);
+        }
+        .death-title { font-size: 36px; font-weight: 900; color: #ef4444; letter-spacing: 2px; }
+        .death-sub { font-size: 14px; color: #cbd5e1; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <div id="lobby-screen">
+        <h1 class="lobby-title">ARIYAN ARMY OP</h1>
+        <p class="lobby-sub">CRAZY GRAPHICS & INSTANT 12-ENEMY SQUAD EDITION</p>
+
+        <div class="multiplayer-box">
+            <span class="label-text">PLAYER NAME</span>
+            <input type="text" id="player-name-input" placeholder="Name" maxlength="12" value="COMMANDO ARIYAN">
+            
+            <span class="label-text">GAME MODE</span>
+            <div class="mode-select">
+                <button class="mode-btn active" onclick="setMatchMode('1V1', this)">1v1 DUEL</button>
+                <button class="mode-btn" onclick="setMatchMode('SQUAD', this)">12-ENEMY SQUAD WAVE</button>
+            </div>
+
+            <span class="label-text">CHOOSE ELITE SKIN</span>
+            <div class="avatar-select">
+                <div class="avatar-card active" onclick="selectAvatar('SARGE', this)">
+                    <canvas id="prev-sarge" class="avatar-preview" width="32" height="32"></canvas>
+                    <div>SARGE</div>
+                </div>
+                <div class="avatar-card" onclick="selectAvatar('COMMANDER', this)">
+                    <canvas id="prev-commander" class="avatar-preview" width="32" height="32"></canvas>
+                    <div>OFFICER</div>
+                </div>
+                <div class="avatar-card" onclick="selectAvatar('NINJA', this)">
+                    <canvas id="prev-ninja" class="avatar-preview" width="32" height="32"></canvas>
+                    <div>SPEC-OPS</div>
+                </div>
+            </div>
+
+            <button class="btn btn-music" id="music-toggle-btn" onclick="toggleLobbyMusic()">LOBBY MUSIC: ON 🎵</button>
+            <hr style="border-color: #334155; margin: 2px 0;">
+            <button class="btn btn-green" onclick="startOfflineMatch()">PLAY SQUAD BATTLE (OFFLINE)</button>
+            <button class="btn" onclick="createRoom()">CREATE MULTIPLAYER ROOM</button>
+            <div id="room-display" style="color:#ec4899; font-size:10px;"></div>
+            
+            <input type="text" id="join-id-input" placeholder="ENTER ROOM CODE">
+            <button class="btn" onclick="joinRoom()">JOIN FRIEND'S ROOM</button>
+        </div>
+    </div>
+
+    <div id="mobile-hud" class="mobile-touch-zone">
+        <div id="btn-bomb" class="touch-btn" onclick="throwGrenade()">BOMB</div>
+    </div>
+
+    <div id="death-screen">
+        <h1 class="death-title">YOU DIED!</h1>
+        <p class="death-sub" id="respawn-timer">Respawning in 3...</p>
+    </div>
+
+    <canvas id="gameCanvas" width="960" height="540"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const lobbyScreen = document.getElementById("lobby-screen");
+    const mobileHud = document.getElementById("mobile-hud");
+    const deathScreen = document.getElementById("death-screen");
+    const respawnTimerText = document.getElementById("respawn-timer");
+
+    const WORLD_WIDTH = 2800;
+    const WORLD_HEIGHT = 1000;
+
+    let gameState = "LOBBY";
+    let isMultiplayer = false;
+    let matchMode = "1V1";
+    let peer = null, conn = null;
+    let selectedAvatar = "SARGE";
+    let isDead = false;
+    let respawnCountdown = 3;
+    let announcementText = "";
+    let announcementTimer = 0;
+
+    let killStreak = 0;
+    let killStreakTimer = 0;
+    let lobbyMusicEnabled = true;
+
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    const keys = { a: false, d: false, w: false, s: false };
+    const mouse = { x: 0, y: 0, down: false };
+    let lastShoot = 0;
+
+    const leftStick = { active: false, id: null, startX: 0, startY: 0, currX: 0, currY: 0 };
+    const rightStick = { active: false, id: null, startX: 0, startY: 0, currX: 0, currY: 0 };
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtxInstance = null;
+
+    function playSound(type) {
+        try {
+            if (!audioCtxInstance) audioCtxInstance = new AudioCtx();
+            if (audioCtxInstance.state === 'suspended') audioCtxInstance.resume();
+            const now = audioCtxInstance.currentTime;
+            const osc = audioCtxInstance.createOscillator();
+            const gain = audioCtxInstance.createGain();
+            osc.connect(gain); gain.connect(audioCtxInstance.destination);
+
+            if (type === 'shoot') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'ariyan_shoot') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(950, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'explode') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.exponentialRampToValueAtTime(15, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'pickup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.08);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'hit') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'die') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.35);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.35);
+                osc.start(now); osc.stop(now + 0.35);
+            } else if (type === 'drop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'lobby_note') {
+                if (!lobbyMusicEnabled) return;
+                osc.type = 'sine';
+                const notes = [261.63, 329.63, 392.00, 523.25, 587.33];
+                let freq = notes[Math.floor(Math.random() * notes.length)];
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            }
+        } catch(e) {}
+    }
+
+    function toggleLobbyMusic() {
+        lobbyMusicEnabled = !lobbyMusicEnabled;
+        const btn = document.getElementById("music-toggle-btn");
+        if (lobbyMusicEnabled) {
+            btn.innerText = "LOBBY MUSIC: ON 🎵";
+            btn.style.background = "#7c3aed";
+        } else {
+            btn.innerText = "LOBBY MUSIC: OFF 🔇";
+            btn.style.background = "#475569";
+        }
+    }
+
+    setInterval(() => {
+        if (gameState === "LOBBY" && lobbyMusicEnabled) {
+            playSound('lobby_note');
+        }
+    }, 800);
+
+    const mapObstacles = [
+        { x: 0, y: 920, width: 2800, height: 80, type: "ground" },
+        { x: 0, y: 0, width: 2800, height: 25, type: "ground" },
+        { x: 0, y: 0, width: 25, height: 1000, type: "ground" },
+        { x: 2775, y: 0, width: 25, height: 1000, type: "ground" },
+        
+        { x: 150, y: 760, width: 340, height: 160, type: "hill" },
+        { x: 580, y: 640, width: 140, height: 130, type: "crate_stack" },
+        { x: 800, y: 520, width: 380, height: 50, type: "rock" },
+        { x: 1250, y: 780, width: 480, height: 140, type: "hill" },
+        { x: 1450, y: 570, width: 200, height: 40, type: "metal" },
+        { x: 1850, y: 680, width: 130, height: 240, type: "crate_stack" },
+        { x: 2100, y: 480, width: 450, height: 60, type: "rock" },
+        { x: 1600, y: 340, width: 350, height: 45, type: "metal" }
+    ];
+
+    const WEAPONS = {
+        UZI: { name: "UZI", fireRate: 65, damage: 18, speed: 22, isExplosive: false, color: "#38bdf8" },
+        AK47: { name: "AK47", fireRate: 90, damage: 32, speed: 24, isExplosive: false, color: "#f59e0b" },
+        SHOTGUN: { name: "SHOTGUN", fireRate: 380, damage: 45, speed: 20, isExplosive: false, color: "#fb7185" },
+        SNIPER: { name: "SNIPER", fireRate: 650, damage: 120, speed: 32, isExplosive: false, color: "#a855f7" },
+        BAZOOKA: { name: "BAZOOKA", fireRate: 900, damage: 150, speed: 15, isExplosive: true, color: "#ef4444" },
+        ARIYAN_GUN: { name: "Ariyan Guns", fireRate: 80, damage: 999, speed: 40, isExplosive: true, isOneShot: true, color: "#ec4899" }
+    };
+
+    let player = {
+        name: "ARIYAN", avatar: "SARGE", team: 1,
+        x: 200, y: 300, vx: 0, vy: 0,
+        speed: 4.8, gravity: 0.48, lift: -0.68,
+        fuel: 250, maxFuel: 250, health: 600, maxHealth: 600,
+        regenRate: 3.0,
+        bombs: 3, angle: 0, isGrounded: false, kills: 0,
+        weapons: [WEAPONS.AK47, WEAPONS.UZI], currentGunIndex: 0,
+        ariyanGunTimer: 0
+    };
+
+    let camera = { x: 0, y: 0 };
+    let remotePlayer = null;
+    let bullets = [];
+    let thrownGrenades = [];
+    let particles = [];
+    let bots = [];
+    
+    let mapGuns = [
+        { x: 350, y: 730, weapon: WEAPONS.BAZOOKA },
+        { x: 1350, y: 530, weapon: WEAPONS.SNIPER },
+        { x: 2250, y: 440, weapon: WEAPONS.SHOTGUN },
+        { x: 620, y: 570, weapon: WEAPONS.AK47 }
+    ];
+
+    let ariyanGunDrop = null;
+    let lastAriyanSpawnTime = 0;
+    const ARIYAN_SPAWN_INTERVAL = 35000;
+    const ARIYAN_DESPAWN_TIME = 12000;
+
+    function spawnAriyanGun() {
+        if (ariyanGunDrop) return;
+        // মাটি বা প্ল্যাটফর্মের একদম সঠিক উচ্চতায় (হাওয়া নয়, সরাসরি মাটিতে) স্পন করবে
+        const rx = Math.random() * (WORLD_WIDTH - 600) + 300;
+        let groundY = 900; // ডিফল্ট মাটি
+        mapObstacles.forEach(plat => {
+            if (rx >= plat.x && rx <= plat.x + plat.width && plat.y < groundY && plat.y > 300) {
+                groundY = plat.y - 15;
+            }
+        });
+        
+        ariyanGunDrop = {
+            x: rx, y: groundY,
+            weapon: WEAPONS.ARIYAN_GUN,
+            spawnTime: Date.now()
+        };
+        playSound('drop');
+        announcementText = "🔥 AIRDROP: 'Ariyan Guns' Spawned Directly on Ground!";
+        announcementTimer = 200;
+    }
+
+    function setMatchMode(mode, btn) {
+        matchMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function selectAvatar(avatar, card) {
+        selectedAvatar = avatar;
+        document.querySelectorAll('.avatar-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+    }
+
+    function switchWeapon() {
+        player.currentGunIndex = (player.currentGunIndex + 1) % player.weapons.length;
+        playSound('pickup');
+    }
+
+    function handleGunBoxAction() {
+        if (isDead || gameState !== "PLAYING") return;
+
+        if (ariyanGunDrop && Math.hypot(player.x - ariyanGunDrop.x, player.y - ariyanGunDrop.y) < 100) {
+            player.weapons[player.currentGunIndex] = ariyanGunDrop.weapon;
+            player.ariyanGunTimer = 1200; 
+            ariyanGunDrop = null;
+            lastAriyanSpawnTime = Date.now();
+            playSound('pickup');
+            announcementText = "⭐ 'Ariyan Guns' Collected! Ultimate OP Mode Active!";
+            announcementTimer = 180;
+            return;
+        }
+
+        let nearestIdx = -1;
+        let minDist = 95;
+        mapGuns.forEach((g, idx) => {
+            let d = Math.hypot(player.x - g.x, player.y - g.y);
+            if (d < minDist) { minDist = d; nearestIdx = idx; }
+        });
+
+        if (nearestIdx !== -1) {
+            let droppedGun = player.weapons[player.currentGunIndex];
+            player.weapons[player.currentGunIndex] = mapGuns[nearestIdx].weapon;
+            mapGuns[nearestIdx].weapon = droppedGun;
+            playSound('pickup');
+        } else {
+            switchWeapon();
+        }
+    }
+
+    function throwGrenade() {
+        if (player.bombs > 0 && !isDead && gameState === "PLAYING") {
+            player.bombs--;
+            thrownGrenades.push({
+                x: player.x, y: player.y - 10,
+                vx: Math.cos(player.angle) * 12, vy: Math.sin(player.angle) * 12,
+                timer: 80
+            });
+            playSound('shoot');
+        }
+    }
+
+    function respawnPlayer() {
+        player.health = player.maxHealth;
+        player.fuel = player.maxFuel;
+        player.x = Math.random() * 800 + 200;
+        player.y = 200;
+        player.vx = 0; player.vy = 0;
+        isDead = false;
+        deathScreen.style.display = "none";
+    }
+
+    function killPlayer() {
+        if (isDead) return;
+        isDead = true;
+        mouse.down = false;
+        playSound('die');
+        deathScreen.style.display = "flex";
+        respawnCountdown = 3;
+        respawnTimerText.innerText = "Respawning in " + respawnCountdown + "...";
+
+        let timerInterval = setInterval(() => {
+            respawnCountdown--;
+            if (respawnCountdown > 0) {
+                respawnTimerText.innerText = "Respawning in " + respawnCountdown + "...";
+            } else {
+                clearInterval(timerInterval);
+                respawnPlayer();
+            }
+        }, 1000);
+    }
+
+    function spawnBotSquad(count = 12) {
+        bots = [];
+        const avatars = ["SARGE", "COMMANDER", "NINJA"];
+        const weaponList = [WEAPONS.AK47, WEAPONS.UZI, WEAPONS.SHOTGUN, WEAPONS.SNIPER, WEAPONS.BAZOOKA];
+        
+        for (let i = 0; i < count; i++) {
+            bots.push({
+                avatar: avatars[Math.floor(Math.random() * avatars.length)],
+                x: Math.random() * (WORLD_WIDTH - 800) + 400, y: 150 + (i * 20) % 300,
+                vx: 0, vy: 0, health: 90, maxHealth: 90, angle: 0, lastShoot: Math.random() * 1000, team: 2,
+                gun: weaponList[Math.floor(Math.random() * weaponList.length)]
+            });
+        }
+    }
+
+    function startOfflineMatch() {
+        player.name = document.getElementById("player-name-input").value.toUpperCase() || "COMMANDO";
+        player.avatar = selectedAvatar;
+        player.kills = 0;
+        isMultiplayer = false;
+        lobbyScreen.style.display = "none";
+        
+        if (isTouchDevice) mobileHud.style.display = "block";
+        
+        gameState = "PLAYING";
+        
+        // একসাথে ১০-১২ জন এনিমি স্পন করার জন্য স্কোয়াড মোড
+        let spawnCount = (matchMode === "SQUAD") ? 12 : 3;
+        spawnBotSquad(spawnCount);
+        
+        spawnAriyanGun();
+        lastAriyanSpawnTime = Date.now();
+    }
+
+    function createRoom() {
+        player.name = document.getElementById("player-name-input").value.toUpperCase() || "COMMANDO";
+        player.avatar = selectedAvatar;
+        player.kills = 0;
+        peer = new Peer();
+        peer.on('open', (id) => { document.getElementById("room-display").innerText = "ROOM CODE: " + id; });
+        peer.on('connection', (connection) => {
+            conn = connection; setupMultiplayer(); startMultiplayerMatch();
+        });
+    }
+
+    function joinRoom() {
+        const joinId = document.getElementById("join-id-input").value.trim();
+        if (!joinId) return alert("Enter Room Code!");
+        player.name = document.getElementById("player-name-input").value.toUpperCase() || "COMMANDO";
+        player.avatar = selectedAvatar;
+        player.kills = 0;
+        peer = new Peer();
+        peer.on('open', () => {
+            conn = peer.connect(joinId); setupMultiplayer(); startMultiplayerMatch();
+        });
+    }
+
+    function setupMultiplayer() {
+        conn.on('data', (data) => {
+            remotePlayer = data.player;
+            if (data.bullet) bullets.push(data.bullet);
+            if (data.grenade) thrownGrenades.push(data.grenade);
+        });
+    }
+
+    function startMultiplayerMatch() {
+        isMultiplayer = true; lobbyScreen.style.display = "none"; 
+        if (isTouchDevice) mobileHud.style.display = "block"; 
+        gameState = "PLAYING";
+        if (matchMode === "SQUAD") {
+            spawnBotSquad(12);
+        } else {
+            bots = [];
+        }
+        spawnAriyanGun();
+        lastAriyanSpawnTime = Date.now();
+    }
+
+    window.addEventListener("keydown", e => {
+        if (gameState !== "PLAYING") return;
+        if (e.key === "a" || e.key === "A") keys.a = true;
+        if (e.key === "d" || e.key === "D") keys.d = true;
+        if (e.key === "w" || e.key === "W" || e.key === " ") keys.w = true;
+        if (e.key === "s" || e.key === "S") keys.s = true;
+        if (e.key === "q" || e.key === "Q" || e.key === "f" || e.key === "F") handleGunBoxAction();
+        if (e.key === "e" || e.key === "E") throwGrenade();
+    });
+    window.addEventListener("keyup", e => {
+        if (e.key === "a" || e.key === "A") keys.a = false;
+        if (e.key === "d" || e.key === "D") keys.d = false;
+        if (e.key === "w" || e.key === "W" || e.key === " ") keys.w = false;
+        if (e.key === "s" || e.key === "S") keys.s = false;
+    });
+
+    function checkCanvasClick(screenX, screenY) {
+        if (screenX >= 15 && screenX <= 295 && screenY >= 15 && screenY <= 95) {
+            handleGunBoxAction();
+            return true;
+        }
+        return false;
+    }
+
+    canvas.addEventListener("mousemove", e => {
+        if (gameState !== "PLAYING") return;
+        let rect = canvas.getBoundingClientRect();
+        let scaleX = canvas.width / rect.width;
+        let scaleY = canvas.height / rect.height;
+        mouse.x = (e.clientX - rect.left) * scaleX + camera.x;
+        mouse.y = (e.clientY - rect.top) * scaleY + camera.y;
+    });
+
+    canvas.addEventListener("mousedown", e => {
+        if (isDead || gameState !== "PLAYING") return;
+        let rect = canvas.getBoundingClientRect();
+        let scaleX = canvas.width / rect.width;
+        let scaleY = canvas.height / rect.height;
+        let clickX = (e.clientX - rect.left) * scaleX;
+        let clickY = (e.clientY - rect.top) * scaleY;
+
+        if (!checkCanvasClick(clickX, clickY)) {
+            mouse.down = true;
+        }
+    });
+
+    canvas.addEventListener("mouseup", () => mouse.down = false);
+    canvas.addEventListener("mouseleave", () => mouse.down = false);
+
+    canvas.addEventListener("touchstart", e => {
+        if (isDead || gameState !== "PLAYING") return;
+        for (let touch of e.changedTouches) {
+            let rect = canvas.getBoundingClientRect();
+            let scaleX = canvas.width / rect.width;
+            let scaleY = canvas.height / rect.height;
+            let touchX = (touch.clientX - rect.left) * scaleX;
+            let touchY = (touch.clientY - rect.top) * scaleY;
+
+            if (checkCanvasClick(touchX, touchY)) continue;
+
+            if (touchX < canvas.width / 2 && !leftStick.active) {
+                leftStick.active = true; leftStick.id = touch.identifier;
+                leftStick.startX = touchX; leftStick.startY = touchY;
+                leftStick.currX = touchX; leftStick.currY = touchY;
+            } else if (touchX >= canvas.width / 2 && !rightStick.active) {
+                rightStick.active = true; rightStick.id = touch.identifier;
+                rightStick.startX = touchX; rightStick.startY = touchY;
+                rightStick.currX = touchX; rightStick.currY = touchY;
+                mouse.down = true;
+            }
+        }
+    });
+
+    canvas.addEventListener("touchmove", e => {
+        if (gameState !== "PLAYING") return;
+        for (let touch of e.changedTouches) {
+            let rect = canvas.getBoundingClientRect();
+            let scaleX = canvas.width / rect.width;
+            let scaleY = canvas.height / rect.height;
+            let touchX = (touch.clientX - rect.left) * scaleX;
+            let touchY = (touch.clientY - rect.top) * scaleY;
+
+            if (leftStick.active && touch.identifier === leftStick.id) {
+                leftStick.currX = touchX; leftStick.currY = touchY;
+            }
+            if (rightStick.active && touch.identifier === rightStick.id) {
+                rightStick.currX = touchX; rightStick.currY = touchY;
+                let worldTouchX = touchX + camera.x;
+                let worldTouchY = touchY + camera.y;
+                player.angle = Math.atan2(worldTouchY - player.y, worldTouchX - player.x);
+            }
+        }
+    });
+
+    function resetTouches(e) {
+        for (let touch of e.changedTouches) {
+            if (leftStick.active && touch.identifier === leftStick.id) {
+                leftStick.active = false; leftStick.id = null;
+                keys.a = false; keys.d = false; keys.w = false;
+            }
+            if (rightStick.active && touch.identifier === rightStick.id) {
+                rightStick.active = false; rightStick.id = null; mouse.down = false;
+            }
+        }
+    }
+
+    canvas.addEventListener("touchend", resetTouches);
+    canvas.addEventListener("touchcancel", resetTouches);
+
+    function triggerExplosion(x, y, radius = 80, maxDamage = 120) {
+        playSound('explode');
+        for (let i = 0; i < 25; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 18, vy: (Math.random() - 0.5) * 18,
+                life: 20, color: Math.random() > 0.3 ? "#ec4899" : "#f59e0b",
+                size: Math.random() * 4 + 2
+            });
+        }
+        if (!isDead && Math.hypot(player.x - x, player.y - y) < radius) {
+            player.health -= maxDamage * 0.4;
+            playSound('hit');
+            if (player.health <= 0) killPlayer();
+        }
+        bots.forEach((bot, idx) => {
+            if (Math.hypot(bot.x - x, bot.y - y) < radius) {
+                bot.health -= maxDamage;
+                if (bot.health <= 0) {
+                    bots.splice(idx, 1); player.kills++; killStreak++; killStreakTimer = 180; 
+                    // স্কোয়াড মোডে এনিমি মরলে নতুন এনিমি সাথে সাথে রি-স্পন করবে যাতে সবসময় দল গোছানো থাকে
+                    setTimeout(() => {
+                        if (bots.length < 12) {
+                            const avatars = ["SARGE", "COMMANDER", "NINJA"];
+                            const wList = [WEAPONS.AK47, WEAPONS.UZI, WEAPONS.SHOTGUN, WEAPONS.SNIPER, WEAPONS.BAZOOKA];
+                            bots.push({
+                                avatar: avatars[Math.floor(Math.random() * avatars.length)],
+                                x: Math.random() * (WORLD_WIDTH - 600) + 300, y: 150,
+                                vx: 0, vy: 0, health: 90, maxHealth: 90, angle: 0, lastShoot: 0, team: 2,
+                                gun: wList[Math.floor(Math.random() * wList.length)]
+                            });
+                        }
+                    }, 2000);
+                }
+            }
+        });
+    }
+
+    function update() {
+        if (gameState !== "PLAYING") return;
+
+        if (!ariyanGunDrop && Date.now() - lastAriyanSpawnTime > ARIYAN_SPAWN_INTERVAL) {
+            spawnAriyanGun();
+        }
+
+        if (ariyanGunDrop && Date.now() - ariyanGunDrop.spawnTime > ARIYAN_DESPAWN_TIME) {
+            ariyanGunDrop = null;
+            lastAriyanSpawnTime = Date.now();
+        }
+
+        if (player.ariyanGunTimer > 0) {
+            player.ariyanGunTimer--;
+            if (player.ariyanGunTimer === 0) {
+                player.weapons[player.currentGunIndex] = WEAPONS.AK47;
+                announcementText = "⌛ 'Ariyan Guns' Expired! Switched back to AK47.";
+                announcementTimer = 150;
+                lastAriyanSpawnTime = Date.now();
+            }
+        }
+
+        if (killStreakTimer > 0) killStreakTimer--;
+        else killStreak = 0;
+
+        if (announcementTimer > 0) announcementTimer--;
+
+        if (!isDead) {
+            if (player.health < player.maxHealth) {
+                player.health = Math.min(player.maxHealth, player.health + player.regenRate);
+            }
+
+            if (leftStick.active) {
+                let dx = leftStick.currX - leftStick.startX;
+                let dy = leftStick.currY - leftStick.startY;
+                keys.a = dx < -8;
+                keys.d = dx > 8;
+                keys.w = dy < -10;
+            }
+
+            if (!rightStick.active) player.angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+
+            if (keys.a) player.vx = -player.speed;
+            else if (keys.d) player.vx = player.speed;
+            else player.vx *= 0.8;
+
+            if (keys.w && player.fuel > 0) {
+                player.vy = Math.max(-5.2, player.vy + player.lift);
+                player.fuel -= 0.4;
+                player.isGrounded = false;
+                if (particles.length < 60) {
+                    particles.push({
+                        x: player.x - Math.cos(player.angle) * 6, y: player.y + 12,
+                        vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 2,
+                        life: 8, color: "#ec4899", size: 3
+                    });
+                }
+            } else {
+                player.vy = Math.min(8, player.vy + player.gravity);
+                if (player.isGrounded) player.fuel = Math.min(player.maxFuel, player.fuel + 6.0);
+                else player.fuel = Math.min(player.maxFuel, player.fuel + 2.0);
+            }
+
+            player.x += player.vx; 
+            player.y += player.vy;
+
+            player.x = Math.max(25, Math.min(WORLD_WIDTH - 25, player.x));
+            player.y = Math.max(25, Math.min(WORLD_HEIGHT - 35, player.y));
+
+            player.isGrounded = false;
+            mapObstacles.forEach(plat => {
+                if (
+                    player.x + 12 > plat.x && player.x - 12 < plat.x + plat.width &&
+                    player.y + 18 >= plat.y && player.y - 18 < plat.y + plat.height
+                ) {
+                    if (player.vy >= 0 && player.y - player.vy <= plat.y + 10) {
+                        player.y = plat.y - 18; player.vy = 0; player.isGrounded = true;
+                    } else if (player.vy < 0 && player.y - player.vy >= plat.y + plat.height - 10) {
+                        player.y = plat.y + plat.height + 18; player.vy = 0;
+                    }
+                }
+            });
+
+            if (player.health <= 0) killPlayer();
+        }
+
+        camera.x = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, player.x - canvas.width / 2));
+        camera.y = Math.max(0, Math.min(WORLD_HEIGHT - canvas.height, player.y - canvas.height / 2));
+
+        let activeGun = player.weapons[player.currentGunIndex];
+        let firedBullet = null;
+        if (!isDead && mouse.down && Date.now() - lastShoot > activeGun.fireRate) {
+            if (activeGun.isOneShot) {
+                playSound('ariyan_shoot');
+            } else {
+                playSound('shoot');
+            }
+            firedBullet = {
+                x: player.x + Math.cos(player.angle) * 22,
+                y: player.y + Math.sin(player.angle) * 22,
+                vx: Math.cos(player.angle) * activeGun.speed,
+                vy: Math.sin(player.angle) * activeGun.speed,
+                damage: activeGun.damage, isExplosive: activeGun.isExplosive, team: player.team,
+                color: activeGun.color, isAriyan: activeGun.isOneShot
+            };
+            bullets.push(firedBullet);
+            lastShoot = Date.now();
+        }
+
+        if (isMultiplayer && conn && conn.open) {
+            conn.send({
+                player: {
+                    name: player.name, avatar: player.avatar, team: (matchMode === "SQUAD" ? 1 : 2),
+                    x: player.x, y: player.y, angle: player.angle,
+                    health: player.health, fuel: player.fuel, isDead: isDead,
+                    currentGun: activeGun
+                },
+                bullet: firedBullet
+            });
+        }
+
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            b.x += b.vx; b.y += b.vy;
+
+            if (Math.random() > 0.5) {
+                particles.push({
+                    x: b.x, y: b.y,
+                    vx: (Math.random() - 0.5) * 1, vy: (Math.random() - 0.5) * 1,
+                    life: 5, color: b.color || "#facc15", size: 2
+                });
+            }
+
+            if (b.x < 0 || b.x > WORLD_WIDTH || b.y < 0 || b.y > WORLD_HEIGHT) {
+                bullets.splice(i, 1); continue;
+            }
+
+            let hitTerrain = false;
+            mapObstacles.forEach(plat => {
+                if (b.x > plat.x && b.x < plat.x + plat.width && b.y > plat.y && b.y < plat.y + plat.height) {
+                    hitTerrain = true;
+                }
+            });
+
+            if (hitTerrain) {
+                if (b.isExplosive) triggerExplosion(b.x, b.y);
+                bullets.splice(i, 1); continue;
+            }
+
+            if (b.team === player.team) {
+                bots.forEach((bot, bIdx) => {
+                    if (Math.hypot(b.x - bot.x, b.y - bot.y) < 22) {
+                        if (b.isExplosive) triggerExplosion(b.x, b.y);
+                        else { bot.health -= b.damage; playSound('hit'); }
+                        bullets.splice(i, 1);
+                        if (bot.health <= 0) {
+                            bots.splice(bIdx, 1); player.kills++; killStreak++; killStreakTimer = 180; 
+                            setTimeout(() => {
+                                if (bots.length < 12) {
+                                    const avatars = ["SARGE", "COMMANDER", "NINJA"];
+                                    const wList = [WEAPONS.AK47, WEAPONS.UZI, WEAPONS.SHOTGUN, WEAPONS.SNIPER, WEAPONS.BAZOOKA];
+                                    bots.push({
+                                        avatar: avatars[Math.floor(Math.random() * avatars.length)],
+                                        x: Math.random() * (WORLD_WIDTH - 600) + 300, y: 150,
+                                        vx: 0, vy: 0, health: 90, maxHealth: 90, angle: 0, lastShoot: 0, team: 2,
+                                        gun: wList[Math.floor(Math.random() * wList.length)]
+                                    });
+                                }
+                            }, 2000);
+                        }
+                    }
+                });
+            } else {
+                if (!isDead && Math.hypot(b.x - player.x, b.y - player.y) < 18) {
+                    if (b.isExplosive) triggerExplosion(b.x, b.y);
+                    else { 
+                        player.health -= (b.damage * 0.55); 
+                        playSound('hit'); 
+                    }
+                    bullets.splice(i, 1);
+                    if (player.health <= 0) killPlayer();
+                }
+            }
+        }
+
+        for (let i = thrownGrenades.length - 1; i >= 0; i--) {
+            let g = thrownGrenades[i];
+            g.x += g.vx; g.y += g.vy; g.vy += 0.35; g.timer--;
+            mapObstacles.forEach(plat => {
+                if (g.x > plat.x && g.x < plat.x + plat.width && g.y > plat.y && g.y < plat.y + plat.height) {
+                    g.vy = -g.vy * 0.4; g.vx *= 0.6;
+                }
+            });
+            if (g.timer <= 0) {
+                triggerExplosion(g.x, g.y, 90, 110);
+                thrownGrenades.splice(i, 1);
+            }
+        }
+
+        bots.forEach(bot => {
+            if (isDead) return;
+            bot.angle = Math.atan2(player.y - bot.y, player.x - bot.x);
+            bot.x += Math.cos(bot.angle) * 1.5;
+            bot.x = Math.max(25, Math.min(WORLD_WIDTH - 25, bot.x));
+            
+            if (Date.now() - bot.lastShoot > 1300) {
+                playSound('shoot');
+                bullets.push({
+                    x: bot.x + Math.cos(bot.angle) * 20, y: bot.y + Math.sin(bot.angle) * 20,
+                    vx: Math.cos(bot.angle) * bot.gun.speed, vy: Math.sin(bot.angle) * bot.gun.speed,
+                    damage: bot.gun.damage, isExplosive: bot.gun.isExplosive, team: bot.team,
+                    color: bot.gun.color
+                });
+                bot.lastShoot = Date.now();
+            }
+        });
+
+        // পার্টিকেল লিমিট অপ্টিমাইজেশন যাতে গেম ল্যাগ বা আটকে না যায়
+        if (particles.length > 70) particles.splice(0, particles.length - 70);
+        particles.forEach((p, idx) => {
+            p.x += p.vx; p.y += p.vy; p.life--;
+            if (p.life <= 0) particles.splice(idx, 1);
+        });
+    }
+
+    function drawGunIcon(context, gunName, x, y) {
+        context.save();
+        context.translate(x, y);
+        context.strokeStyle = "#ffffff";
+        context.lineWidth = 2;
+
+        if (gunName === "Ariyan Guns") {
+            context.fillStyle = "#ec4899"; 
+            context.fillRect(-16, -6, 32, 12);
+            context.fillStyle = "#38bdf8"; 
+            context.fillRect(-8, -3, 16, 6);
+            context.fillStyle = "#facc15"; 
+            context.beginPath(); context.arc(0, 0, 6, 0, Math.PI*2); context.fill();
+            context.fillStyle = "#ffffff";
+            context.fillRect(12, -2, 6, 4);
+        } else if (gunName === "AK47") {
+            context.fillStyle = "#854d0e"; context.fillRect(-12, -2, 8, 4);
+            context.fillStyle = "#334155"; context.fillRect(-4, -3, 18, 4);
+            context.fillStyle = "#f59e0b"; context.fillRect(2, 1, 4, 7);
+        } else if (gunName === "BAZOOKA") {
+            context.fillStyle = "#15803d"; context.fillRect(-14, -5, 28, 9);
+            context.fillStyle = "#ef4444"; context.beginPath(); context.arc(14, 0, 4, 0, Math.PI*2); context.fill();
+        } else if (gunName === "SNIPER") {
+            context.fillStyle = "#0284c7"; context.fillRect(-15, -2, 30, 3);
+            context.fillStyle = "#0f172a"; context.fillRect(-3, -5, 8, 3);
+        } else if (gunName === "SHOTGUN") {
+            context.fillStyle = "#b45309"; context.fillRect(-10, -3, 22, 5);
+        } else {
+            context.fillStyle = "#475569"; context.fillRect(-6, -4, 12, 8);
+        }
+        context.restore();
+    }
+
+    function drawCrazyBackground() {
+        let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        bgGrad.addColorStop(0, "#020617");
+        bgGrad.addColorStop(0.5, "#0f172a");
+        bgGrad.addColorStop(1, "#31103c");
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "rgba(236, 72, 153, 0.15)";
+        ctx.fillRect(120 - camera.x * 0.2, 60, 350, 160);
+        ctx.fillStyle = "rgba(56, 189, 248, 0.12)";
+        ctx.fillRect(850 - camera.x * 0.2, 100, 450, 220);
+    }
+
+    function drawObstacles() {
+        mapObstacles.forEach(plat => {
+            if (plat.type === "hill" || plat.type === "rock") {
+                ctx.fillStyle = "#1e293b"; ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+                ctx.fillStyle = "#ec4899"; ctx.fillRect(plat.x, plat.y, plat.width, 6);
+            } else if (plat.type === "crate_stack") {
+                ctx.fillStyle = "#78350f"; ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+                ctx.strokeStyle = "#ec4899"; ctx.lineWidth = 2; ctx.strokeRect(plat.x, plat.y, plat.width, plat.height);
+                ctx.beginPath(); ctx.moveTo(plat.x, plat.y); ctx.lineTo(plat.x + plat.width, plat.y + plat.height); ctx.stroke();
+            } else if (plat.type === "metal") {
+                ctx.fillStyle = "#334155"; ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+                ctx.fillStyle = "#38bdf8"; ctx.fillRect(plat.x, plat.y, plat.width, 4);
+            } else {
+                ctx.fillStyle = "#0f172a"; ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+                ctx.fillStyle = "#10b981"; ctx.fillRect(plat.x, plat.y, plat.width, 6);
+            }
+        });
+    }
+
+    function draw() {
+        drawCrazyBackground();
+
+        if (gameState !== "PLAYING") return;
+
+        ctx.save();
+        ctx.translate(-camera.x, -camera.y);
+
+        drawObstacles();
+
+        let isNearGun = false;
+
+        if (ariyanGunDrop) {
+            let dist = Math.hypot(player.x - ariyanGunDrop.x, player.y - ariyanGunDrop.y);
+            if (dist < 100) isNearGun = true;
+
+            ctx.fillStyle = "rgba(236, 72, 153, 0.5)";
+            ctx.beginPath(); ctx.arc(ariyanGunDrop.x, ariyanGunDrop.y, 35, 0, Math.PI * 2); ctx.fill();
+            drawGunIcon(ctx, ariyanGunDrop.weapon.name, ariyanGunDrop.x, ariyanGunDrop.y);
+            ctx.fillStyle = "#ec4899"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+            ctx.fillText("🌟 Ariyan Guns [ON GROUND]", ariyanGunDrop.x, ariyanGunDrop.y - 22);
+        }
+
+        mapGuns.forEach(g => {
+            let dist = Math.hypot(player.x - g.x, player.y - g.y);
+            if (dist < 95) isNearGun = true;
+
+            ctx.fillStyle = "rgba(250, 204, 21, 0.25)";
+            ctx.beginPath(); ctx.arc(g.x, g.y, 22, 0, Math.PI * 2); ctx.fill();
+            drawGunIcon(ctx, g.weapon.name, g.x, g.y);
+            ctx.fillStyle = "#fff"; ctx.font = "bold 9px Arial"; ctx.textAlign = "center";
+            ctx.fillText(g.weapon.name, g.x, g.y - 15);
+        });
+
+        ctx.fillStyle = "#ef4444";
+        thrownGrenades.forEach(g => { ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, Math.PI * 2); ctx.fill(); });
+        
+        bullets.forEach(b => {
+            ctx.save();
+            ctx.fillStyle = b.color || "#facc15";
+            ctx.shadowColor = b.color || "#facc15";
+            ctx.shadowBlur = b.isAriyan ? 14 : 6;
+            ctx.beginPath(); 
+            ctx.arc(b.x, b.y, b.isExplosive ? 6 : 3.5, 0, Math.PI * 2); 
+            ctx.fill();
+            ctx.restore();
+        });
+
+        particles.forEach(p => { 
+            ctx.fillStyle = p.color; 
+            ctx.fillRect(p.x, p.y, p.size || 3, p.size || 3); 
+        });
+
+        bots.forEach(bot => drawRealisticHumanSoldier(bot.x, bot.y, bot.angle, bot.avatar, "", bot.gun));
+
+        if (!isDead) {
+            let activeGun = player.weapons[player.currentGunIndex];
+            drawRealisticHumanSoldier(player.x, player.y, player.angle, player.avatar, player.name, activeGun);
+        }
+
+        if (remotePlayer && !remotePlayer.isDead) {
+            drawRealisticHumanSoldier(remotePlayer.x, remotePlayer.y, remotePlayer.angle, remotePlayer.avatar, remotePlayer.name, remotePlayer.currentGun || WEAPONS.AK47);
+        }
+
+        ctx.restore();
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.fillRect(canvas.width / 2 - 90, 15, 180, 35);
+        ctx.strokeStyle = "#ec4899"; ctx.lineWidth = 2; ctx.strokeRect(canvas.width / 2 - 90, 15, 180, 35);
+        ctx.fillStyle = "#facc15"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center";
+        ctx.fillText(`🎯 KILLS: ${player.kills} | SQUAD: ${bots.length}`, canvas.width / 2, 37);
+
+        if (announcementTimer > 0) {
+            ctx.fillStyle = "rgba(219, 39, 119, 0.92)";
+            ctx.fillRect(canvas.width / 2 - 250, 55, 500, 30);
+            ctx.fillStyle = "#fff"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+            ctx.fillText(announcementText, canvas.width / 2, 75);
+        }
+
+        if (killStreak > 1 && killStreakTimer > 0) {
+            ctx.fillStyle = "#ec4899"; ctx.font = "bold 20px Arial"; ctx.textAlign = "center";
+            ctx.fillText(`🔥 SQUAD STREAK x${killStreak}!`, canvas.width / 2, 105);
+        }
+
+        if (isTouchDevice) {
+            if (leftStick.active) {
+                ctx.fillStyle = "rgba(255,255,255,0.2)";
+                ctx.beginPath(); ctx.arc(leftStick.startX, leftStick.startY, 45, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "rgba(236, 72, 153, 0.7)";
+                ctx.beginPath(); ctx.arc(leftStick.currX, leftStick.currY, 20, 0, Math.PI*2); ctx.fill();
+            }
+            if (rightStick.active) {
+                ctx.fillStyle = "rgba(255,255,255,0.2)";
+                ctx.beginPath(); ctx.arc(rightStick.startX, rightStick.startY, 45, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "rgba(239, 68, 68, 0.7)";
+                ctx.beginPath(); ctx.arc(rightStick.currX, rightStick.currY, 20, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        ctx.fillStyle = isNearGun ? "rgba(22, 163, 74, 0.95)" : "rgba(15, 23, 42, 0.92)";
+        ctx.fillRect(15, 15, 280, 80);
+        ctx.strokeStyle = isNearGun ? "#4ade80" : "#ec4899"; ctx.lineWidth = 2; ctx.strokeRect(15, 15, 280, 80);
+
+        ctx.fillStyle = "#ef4444"; ctx.fillRect(20, 22, (Math.max(0, player.health) / player.maxHealth) * 140, 10);
+        ctx.fillStyle = "#3b82f6"; ctx.fillRect(20, 38, (player.fuel / player.maxFuel) * 140, 10);
+
+        ctx.fillStyle = "#fff"; ctx.font = "bold 10px Arial";
+        let hpText = "HP (" + Math.ceil(player.health) + ")";
+        if (player.health < player.maxHealth) hpText += " +FAST REGEN";
+        ctx.fillText(hpText, 168, 30);
+        ctx.fillText("FAST NITRO", 168, 46);
+
+        let curGun = player.weapons[player.currentGunIndex];
+        drawGunIcon(ctx, curGun.name, 45, 66);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 10px Arial";
+        
+        let gunDisplayStr = curGun.name;
+        if (player.ariyanGunTimer > 0) {
+            let secsLeft = Math.ceil(player.ariyanGunTimer / 60);
+            gunDisplayStr += ` (${secsLeft}s)`;
+        }
+        let btnActionText = isNearGun ? " [COLLECT]" : " [SWAP]";
+        ctx.fillText(gunDisplayStr + btnActionText, 90, 70);
+
+        drawMiniMap();
+    }
+
+    function drawMiniMap() {
+        let mmX = canvas.width - 150, mmY = 15, mmW = 135, mmH = 75;
+        ctx.fillStyle = "rgba(15, 23, 42, 0.95)"; ctx.fillRect(mmX, mmY, mmW, mmH);
+        ctx.strokeStyle = "#ec4899"; ctx.lineWidth = 1; ctx.strokeRect(mmX, mmY, mmW, mmH);
+
+        let sx = mmW / WORLD_WIDTH, sy = mmH / WORLD_HEIGHT;
+
+        if (!isDead) {
+            ctx.fillStyle = "#22c55e"; ctx.fillRect(mmX + player.x * sx, mmY + player.y * sy, 4, 4);
+        }
+        ctx.fillStyle = "#ef4444"; bots.forEach(b => ctx.fillRect(mmX + b.x * sx, mmY + b.y * sy, 3, 3));
+        if (ariyanGunDrop) {
+            ctx.fillStyle = "#ec4899"; ctx.fillRect(mmX + ariyanGunDrop.x * sx, mmY + ariyanGunDrop.y * sy, 5, 5);
+        }
+    }
+
+    function drawRealisticHumanSoldier(x, y, angle, avatar, name, currentGun) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        if (name) {
+            ctx.fillStyle = "#ffffff"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
+            ctx.fillText(name, 0, -32);
+        }
+
+        ctx.fillStyle = "#0f172a"; ctx.fillRect(-6, 8, 5, 12); ctx.fillRect(1, 8, 5, 12);
+        ctx.fillStyle = "#1e293b"; ctx.fillRect(-7, 18, 6, 4); ctx.fillRect(1, 18, 6, 4);
+        ctx.fillStyle = "#334155"; ctx.fillRect(-12, -8, 5, 16);
+
+        if (avatar === "SARGE") {
+            ctx.fillStyle = "#831843"; ctx.fillRect(-7, -8, 14, 16);
+            ctx.fillStyle = "#9d174d"; ctx.fillRect(-6, -4, 12, 10);
+            ctx.fillStyle = "#fbcfe8"; ctx.beginPath(); ctx.arc(0, -14, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#500724"; ctx.beginPath(); ctx.arc(0, -16, 8, Math.PI, 0); ctx.fill();
+        } else if (avatar === "COMMANDER") {
+            ctx.fillStyle = "#1e3a8a"; ctx.fillRect(-7, -8, 14, 16);
+            ctx.fillStyle = "#1d4ed8"; ctx.fillRect(-6, -4, 12, 10);
+            ctx.fillStyle = "#fbcfe8"; ctx.beginPath(); ctx.arc(0, -14, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#ec4899"; ctx.beginPath(); ctx.arc(0, -17, 8, Math.PI * 0.8, 0); ctx.fill();
+        } else if (avatar === "NINJA") {
+            ctx.fillStyle = "#020617"; ctx.fillRect(-7, -8, 14, 16);
+            ctx.fillStyle = "#0f172a"; ctx.fillRect(-6, -4, 12, 10);
+            ctx.fillStyle = "#fbcfe8"; ctx.beginPath(); ctx.arc(0, -14, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#ec4899"; ctx.fillRect(-6, -18, 12, 3);
+        }
+
+        ctx.rotate(angle);
+        if (currentGun) {
+            drawGunIcon(ctx, currentGun.name, 10, 0);
+        } else {
+            ctx.fillStyle = "#334155"; ctx.fillRect(0, -3, 16, 5);
+        }
+        ctx.fillStyle = "#fbcfe8"; ctx.beginPath(); ctx.arc(2, 0, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+
+    function renderLobbyPreviews() {
+        try {
+            let p1 = document.getElementById("prev-sarge").getContext("2d");
+            let p2 = document.getElementById("prev-commander").getContext("2d");
+            let p3 = document.getElementById("prev-ninja").getContext("2d");
+
+            [p1, p2, p3].forEach(c => { if(c) { c.fillStyle = "#0f172a"; c.fillRect(0,0,32,32); } });
+            if(p1) { p1.fillStyle = "#831843"; p1.beginPath(); p1.arc(16, 16, 9, 0, Math.PI*2); p1.fill(); }
+            if(p2) { p2.fillStyle = "#1e3a8a"; p2.beginPath(); p2.arc(16, 16, 9, 0, Math.PI*2); p2.fill(); }
+            if(p3) { p3.fillStyle = "#0f172a"; p3.beginPath(); p3.arc(16, 16, 9, 0, Math.PI*2); p3.fill(); }
+        } catch(e) {}
+    }
+
+    setTimeout(renderLobbyPreviews, 200);
+
+    function gameLoop() {
+        update(); 
+        draw(); 
+        requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+</script>
+</body>
+</html>
